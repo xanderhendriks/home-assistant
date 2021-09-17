@@ -1,0 +1,112 @@
+blueprint:
+  name: Turn on based on motion with time based levels
+  description: "Turn on a light, switch, scene, script or group based on motion detection.\
+    \ Depending upon the time of day the night or day dim level is selected.\n\n\
+    \ Required entities:\n\
+    \ - Motion sensor: single sensor or group\n\
+    \ - Target entity: light, switch, scene or script\n\
+    \ - No motion wait: time to wait after last motion before switching the light off\
+    \ - Start day time: day dim level\n\
+    \ - Start night time: night dim level\n\
+    \ - Day dim level: level in %\n\
+    \ - Night dim level: level in %\n\
+    \ \n Based on apollo1220's motion_activated_entity.yaml"
+  domain: automation
+  input:
+    motion_sensor:
+      name: Motion Sensor
+      description: This sensor will trigger the turning on of the target entity.
+      selector:
+        entity:
+          domain: binary_sensor
+    target_entity:
+      name: Target entity.
+      description: The light, switch, scene to turn on (or script to run) when the automation is triggered.
+      selector:
+        entity: {}
+    no_motion_wait:
+      name: Turn off wait time (seconds)
+      description: Time in seconds to leave the target entity on after last motion is detected.
+      default: 0
+      selector:
+        number:
+          min: 0.0
+          max: 300.0
+          unit_of_measurement: seconds
+          mode: slider
+          step: 1.0
+    start_day_time:
+      name: Start day time
+      description: Day dim level is used at times later than this input_datetime value.
+      default:
+      selector:
+        entity:
+          domain: input_datetime
+    start_night_time:
+      name: Start night time
+      description: Night dim level is used at times later than this input_datetime value.
+      default:
+      selector:
+        entity:
+          domain: input_datetime
+    day_dim_level:
+      name: Daytime dim level
+      description: Percentage to dim the lights to during daytime hours
+      default: 100
+      selector:
+        number:
+          min: 0
+          max: 100
+          unit_of_measurement: "%"          
+          mode: slider
+          step: 1
+    night_dim_level:
+      name: Nighttime dim level
+      description: Percentage to dim the lights to during nighttime hours
+      default: 10
+      selector:
+        number:
+          min: 0
+          max: 100
+          unit_of_measurement: "%"          
+          mode: slider
+          step: 1
+  source_url: https://github.com/xanderhendriks/home-assistant/blueprints/blob/master/motion_activated_entity.yaml
+mode: restart
+max_exceeded: silent
+  trigger:
+  - platform: state
+    entity_id: !input 'motion_sensor'
+    from: 'off'
+    to: 'on'
+  condition: []
+  action:
+  - choose:
+    - conditions:
+      - condition: time
+        after: !input 'start_night_time'
+        before: !input 'start_day_time'
+      sequence:
+      - service: light.turn_on
+        data:
+          brightness_pct: !input 'night_dim_level'
+        target:
+          entity_id: !input 'target_entity'
+    default:
+    - service: light.turn_on
+      data:
+        brightness_pct: !input 'day_dim_level'
+      target:
+        entity_id: !input 'target_entity'
+  - wait_for_trigger:
+    - platform: state
+      entity_id: !input 'motion_sensor'
+      to: 'off'
+  - delay:
+      hours: 0
+      minutes: 0
+      seconds: 8
+      milliseconds: 0
+  - service: light.turn_off
+    target:
+      entity_id: !input 'target_entity'

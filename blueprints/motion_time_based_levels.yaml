@@ -105,7 +105,7 @@ action:
 - delay:
     hours: 0
     minutes: 0
-    seconds: 8
+    seconds: !input 'no_motion_wait'
     milliseconds: 0
 - service: light.turn_off
   target:

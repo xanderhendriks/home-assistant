@@ -74,39 +74,39 @@ blueprint:
   source_url: https://github.com/xanderhendriks/home-assistant/blob/master/blueprints/motion_time_based_levels.yaml
 mode: restart
 max_exceeded: silent
-  trigger:
-  - platform: state
-    entity_id: !input 'motion_sensor'
-    from: 'off'
-    to: 'on'
-  condition: []
-  action:
-  - choose:
-    - conditions:
-      - condition: time
-        after: !input 'start_night_time'
-        before: !input 'start_day_time'
-      sequence:
-      - service: light.turn_on
-        data:
-          brightness_pct: !input 'night_dim_level'
-        target:
-          entity_id: !input 'target_entity'
-    default:
+trigger:
+- platform: state
+  entity_id: !input 'motion_sensor'
+  from: 'off'
+  to: 'on'
+condition: []
+action:
+- choose:
+  - conditions:
+    - condition: time
+      after: !input 'start_night_time'
+      before: !input 'start_day_time'
+    sequence:
     - service: light.turn_on
       data:
-        brightness_pct: !input 'day_dim_level'
+        brightness_pct: !input 'night_dim_level'
       target:
         entity_id: !input 'target_entity'
-  - wait_for_trigger:
-    - platform: state
-      entity_id: !input 'motion_sensor'
-      to: 'off'
-  - delay:
-      hours: 0
-      minutes: 0
-      seconds: 8
-      milliseconds: 0
-  - service: light.turn_off
+  default:
+  - service: light.turn_on
+    data:
+      brightness_pct: !input 'day_dim_level'
     target:
       entity_id: !input 'target_entity'
+- wait_for_trigger:
+  - platform: state
+    entity_id: !input 'motion_sensor'
+    to: 'off'
+- delay:
+    hours: 0
+    minutes: 0
+    seconds: 8
+    milliseconds: 0
+- service: light.turn_off
+  target:
+    entity_id: !input 'target_entity'
